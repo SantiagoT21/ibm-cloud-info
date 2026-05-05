@@ -59,7 +59,7 @@ git add .
 git commit -m "Initial commit: IBM Cloud Info project"
 
 # Agregar remote (reemplaza TU_USUARIO con tu usuario de GitHub)
-git remote add origin https://github.com/TU_USUARIO/ibm-cloud-info.git
+git remote add origin https://github.com/SantiagoT21/ibm-cloud-info.git
 
 # Cambiar a branch main
 git branch -M main
