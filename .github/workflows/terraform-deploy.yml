@@ -73,6 +73,13 @@ jobs:
         id: validate
         run: terraform validate -no-color
 
+      - name: Import Existing Project (if exists)
+        id: import
+        run: |
+          # Try to import existing project, ignore if it doesn't exist or already imported
+          terraform import -input=false ibm_code_engine_project.project ibm-cloud-info || true
+        continue-on-error: true
+
       - name: Terraform Plan
         id: plan
         run: terraform plan -no-color -input=false -out=tfplan
