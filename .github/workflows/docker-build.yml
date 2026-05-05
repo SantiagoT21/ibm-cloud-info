@@ -87,11 +87,12 @@ jobs:
           echo "**Digest:** \`${{ steps.meta.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Trigger Terraform deployment
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.PAT_TOKEN != ''
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.PAT_TOKEN }}
           event-type: docker-image-updated
           client-payload: '{"image_tag": "latest", "sha": "${{ github.sha }}"}'
+        continue-on-error: true
 
 # Made with Bob
