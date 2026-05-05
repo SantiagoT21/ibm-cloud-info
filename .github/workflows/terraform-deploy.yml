@@ -76,8 +76,8 @@ jobs:
       - name: Import Existing Project (if exists)
         id: import
         run: |
-          # Try to import existing project, ignore if it doesn't exist or already imported
-          terraform import -input=false ibm_code_engine_project.project ibm-cloud-info || true
+          # Try to import existing project using project ID
+          terraform import -input=false ibm_code_engine_project.project 7d0c3fe6-235e-406d-a979-3d7b9f35a326 || true
         continue-on-error: true
 
       - name: Terraform Plan
