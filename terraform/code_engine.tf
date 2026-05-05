@@ -40,7 +40,7 @@ resource "ibm_code_engine_app" "app" {
   }
 
   depends_on = [
-    time_sleep.wait_for_project
+    ibm_code_engine_project.project
   ]
 
   timeouts {

@@ -16,10 +16,3 @@ resource "ibm_code_engine_project" "project" {
     delete = "15m"
   }
 }
-
-# Wait for project to be ready
-resource "time_sleep" "wait_for_project" {
-  depends_on = [ibm_code_engine_project.project]
-  
-  create_duration = "30s"
-}
