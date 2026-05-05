@@ -1,0 +1,176 @@
+name: Terraform Deploy to IBM Cloud
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-deploy.yml'
+  repository_dispatch:
+    types: [docker-image-updated]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: '1.6.0'
+  TF_WORKING_DIR: './terraform'
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action || 'apply' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Create terraform.tfvars
+        run: |
+          cat > terraform.tfvars << EOF
+          ibmcloud_api_key    = "${{ secrets.IBM_CLOUD_API_KEY }}"
+          region              = "${{ secrets.IBM_CLOUD_REGION }}"
+          resource_group_name = "${{ secrets.IBM_CLOUD_RESOURCE_GROUP }}"
+          project_name        = "ibm-cloud-info"
+          app_name            = "ibm-cloud-info-app"
+          container_image     = "icr.io/${{ secrets.ICR_NAMESPACE }}/ibm-cloud-info:latest"
+          container_port      = 8080
+          cpu                 = "0.25"
+          memory              = "0.5G"
+          min_scale           = 0
+          max_scale           = 10
+          request_timeout     = 300
+          tags                = ["terraform", "code-engine", "ibm-cloud-info", "github-actions"]
+          EOF
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=tfplan
+        continue-on-error: false
+
+      - name: Save Plan Output
+        if: github.event_name == 'pull_request'
+        run: |
+          terraform show -no-color tfplan > plan_output.txt
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Terraform Apply
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'repository_dispatch') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+        run: terraform apply -auto-approve -input=false tfplan
+
+      - name: Terraform Destroy
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+        run: terraform destroy -auto-approve -input=false
+
+      - name: Get Terraform Outputs
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'repository_dispatch') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+        id: outputs
+        run: |
+          echo "app_url=$(terraform output -raw application_url)" >> $GITHUB_OUTPUT
+          echo "project_id=$(terraform output -raw project_id)" >> $GITHUB_OUTPUT
+          echo "app_status=$(terraform output -raw application_status)" >> $GITHUB_OUTPUT
+
+      - name: Deployment Summary
+        if: |
+          (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+          (github.event_name == 'repository_dispatch') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Application successfully deployed to IBM Cloud Code Engine!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application URL:** ${{ steps.outputs.outputs.app_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project ID:** \`${{ steps.outputs.outputs.project_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** \`${{ steps.outputs.outputs.app_status }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region:** \`${{ secrets.IBM_CLOUD_REGION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Container Image:** \`icr.io/${{ secrets.ICR_NAMESPACE }}/ibm-cloud-info:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Access Your Application" >> $GITHUB_STEP_SUMMARY
+          echo "Visit: [${{ steps.outputs.outputs.app_url }}](${{ steps.outputs.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Deployed by: @${{ github.actor }} at $(date -u)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Terraform Plan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f terraform.tfvars
+          rm -f tfplan
+          rm -f plan_output.txt
+
+# Made with Bob

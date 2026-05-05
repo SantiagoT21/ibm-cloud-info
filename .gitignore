@@ -1,0 +1,79 @@
+# Terraform files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Terraform lock file (optional - some teams commit this)
+# .terraform.lock.hcl
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+*.zip
+*.tar.gz
+
+# Node modules (if using any JS tooling)
+node_modules/
+
+# Python (if using any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Credentials and secrets
+credentials.json
+secrets.json
+*.pem
+*.key
+*.crt
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Container registry credentials
+.docker/config.json
+
+# Made with Bob

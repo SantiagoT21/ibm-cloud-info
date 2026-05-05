@@ -1,0 +1,42 @@
+# IBM Cloud Configuration
+# Copy this file to terraform.tfvars and fill in your actual values
+# IMPORTANT: Never commit terraform.tfvars to version control
+
+# IBM Cloud API Key (required)
+# Get your API key from: https://cloud.ibm.com/iam/apikeys
+ibmcloud_api_key = "YOUR_IBM_CLOUD_API_KEY_HERE"
+
+# Region where resources will be deployed
+region = "us-south"
+
+# Resource Group name (must exist in your IBM Cloud account)
+resource_group_name = "Default"
+
+# Code Engine Project Configuration
+project_name = "ibm-cloud-info"
+
+# Application Configuration
+app_name = "ibm-cloud-info-app"
+
+# Container Image
+# Format: icr.io/<namespace>/<image-name>:<tag>
+# Example: icr.io/my-namespace/ibm-cloud-info:latest
+# You need to replace this with your actual IBM Container Registry namespace
+container_image = "icr.io/YOUR_NAMESPACE/ibm-cloud-info:latest"
+
+# Container port (must match the port exposed in Dockerfile)
+container_port = 8080
+
+# Resource Allocation
+cpu    = "0.25"  # Options: 0.125, 0.25, 0.5, 1, 2, 4, 6, 8
+memory = "0.5G"  # Options: 0.25G, 0.5G, 1G, 2G, 4G, 8G, 16G, 32G
+
+# Scaling Configuration
+min_scale = 0   # Set to 0 for scale-to-zero (cost savings)
+max_scale = 10  # Maximum number of instances
+
+# Request timeout in seconds
+request_timeout = 300
+
+# Tags for resource organization
+tags = ["terraform", "code-engine", "ibm-cloud-info"]

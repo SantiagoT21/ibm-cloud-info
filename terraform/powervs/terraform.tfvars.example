@@ -1,0 +1,43 @@
+# IBM Cloud Authentication
+# Get your API key from: https://cloud.ibm.com/iam/apikeys
+ibmcloud_api_key = "YOUR_IBM_CLOUD_API_KEY"
+
+# Region and Zone Configuration
+region        = "us-south"      # IBM Cloud region for VPC services
+powervs_zone  = "dal12"         # PowerVS zone (dal12, dal13, lon06, syd04, tok04, etc.)
+
+# Resource Group
+resource_group_name = "Default"
+
+# PowerVS Workspace
+workspace_name = "ibm-cloud-info-workspace"
+
+# Network Configuration
+network_name = "ibm-cloud-info-network"
+network_cidr = "192.168.0.0/24"
+network_dns  = ["9.9.9.9", "1.1.1.1"]
+
+# Instance Configuration
+instance_name       = "ibm-cloud-info-lpar"
+instance_image_name = "Rocky-Linux-9"  # Available images: Rocky-Linux-9, RHEL9-SP2, CentOS-Stream-9
+
+# Compute Resources (optimized for cost)
+instance_processors = 0.25      # CPU cores (0.25, 0.5, 1, 2, 4, etc.)
+instance_memory     = 2         # RAM in GB (minimum 2GB)
+instance_proc_type  = "shared"  # shared, dedicated, or capped
+instance_sys_type   = "s922"    # s922, e980, or e1080
+
+# Storage Configuration
+instance_storage_tier = "tier3"  # tier0 (fastest), tier1, tier3 (standard), tier5k
+instance_storage_size = 20       # Disk size in GB (minimum 20GB)
+
+# SSH Configuration
+# Generate SSH key: ssh-keygen -t rsa -b 4096 -f ~/.ssh/powervs_key
+ssh_key_name   = "ibm-cloud-info-ssh-key"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-email@example.com"
+
+# Application Configuration
+app_port = 80
+
+# Tags
+tags = ["terraform", "powervs", "ibm-cloud-info", "rocky-linux"]
