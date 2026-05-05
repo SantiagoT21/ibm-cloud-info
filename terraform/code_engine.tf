@@ -42,12 +42,6 @@ resource "ibm_code_engine_app" "app" {
   depends_on = [
     ibm_code_engine_project.project
   ]
-
-  timeouts {
-    create = "20m"
-    update = "20m"
-    delete = "20m"
-  }
 }
 
 # Output the application URL
