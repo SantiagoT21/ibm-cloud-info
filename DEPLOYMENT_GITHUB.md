@@ -28,7 +28,7 @@ Una vez creado el repositorio:
 3. En el menú lateral, click en **Secrets and variables** > **Actions**
 4. Click en **New repository secret**
 
-Agrega estos 4 secrets:
+Agrega estos 5 secrets:
 
 #### Secret 1: IBM_CLOUD_API_KEY
 - **Name**: `IBM_CLOUD_API_KEY`
@@ -45,6 +45,19 @@ Agrega estos 4 secrets:
 #### Secret 4: ICR_NAMESPACE
 - **Name**: `ICR_NAMESPACE`
 - **Value**: `test_icr`
+
+#### Secret 5: PAT_TOKEN (Personal Access Token)
+- **Name**: `PAT_TOKEN`
+- **Value**: Tu Personal Access Token de GitHub
+
+**Cómo crear el PAT_TOKEN:**
+1. Ve a GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
+2. Click en "Generate new token (classic)"
+3. Dale un nombre descriptivo: `GitHub Actions Workflow`
+4. Selecciona el scope: `repo` (Full control of private repositories)
+5. Click en "Generate token"
+6. Copia el token generado (solo se muestra una vez)
+7. Agrégalo como secret con el nombre `PAT_TOKEN`
 
 ### Paso 3: Push del Código a GitHub
 

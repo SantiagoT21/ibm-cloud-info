@@ -90,7 +90,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           event-type: docker-image-updated
           client-payload: '{"image_tag": "latest", "sha": "${{ github.sha }}"}'
 
