@@ -53,7 +53,7 @@ Ejecuta estos comandos en orden:
 
 ```bash
 # 1. Login a IBM Cloud
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 
 # 2. Instalar plugins necesarios
 ibmcloud plugin install container-registry -f

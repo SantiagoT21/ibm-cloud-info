@@ -34,7 +34,7 @@ ibmcloud plugin list
 
 ```bash
 # 1. Login a IBM Cloud
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 
 # 2. Login a Container Registry
 ibmcloud cr login
@@ -106,7 +106,7 @@ Agrega estos secrets:
 
 | Secret Name | Value |
 |-------------|-------|
-| `IBM_CLOUD_API_KEY` | `zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil` |
+| `IBM_CLOUD_API_KEY` | `ibm-cloud-api-key` |
 | `IBM_CLOUD_REGION` | `us-south` |
 | `IBM_CLOUD_RESOURCE_GROUP` | `ibm-code-engine-test-rg` |
 | `ICR_NAMESPACE` | `test_icr` |
@@ -204,7 +204,7 @@ Una vez completado el deployment, verifica:
 ### Error: "Authentication failed"
 ```bash
 # Re-login a IBM Cloud
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 ```
 
 ### Error: "Namespace not found"

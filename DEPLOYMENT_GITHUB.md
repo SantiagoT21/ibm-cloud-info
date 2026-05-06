@@ -32,7 +32,7 @@ Agrega estos 5 secrets:
 
 #### Secret 1: IBM_CLOUD_API_KEY
 - **Name**: `IBM_CLOUD_API_KEY`
-- **Value**: `zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil`
+- **Value**: `ibm-cloud-api-key`
 
 #### Secret 2: IBM_CLOUD_REGION
 - **Name**: `IBM_CLOUD_REGION`

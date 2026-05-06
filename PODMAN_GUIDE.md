@@ -31,7 +31,7 @@ ibmcloud plugin list
 
 ```bash
 # Login a IBM Cloud
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 
 # Configurar región
 ibmcloud cr region-set us-south
@@ -49,7 +49,7 @@ podman build -t icr.io/test_icr/ibm-cloud-info:latest .
 
 # Login a IBM Container Registry con Podman
 # Usa 'iamapikey' como usuario y tu API Key como password
-podman login icr.io -u iamapikey -p zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+podman login icr.io -u iamapikey -p ibm-cloud-api-key
 
 # Push de la imagen
 podman push icr.io/test_icr/ibm-cloud-info:latest
@@ -94,10 +94,10 @@ podman run -p 8080:8080 ibm-cloud-info:test
 
 ```bash
 # Setup completo en un solo bloque
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil && \
+ibmcloud login --apikey ibm-cloud-api-key && \
 ibmcloud cr region-set us-south && \
 podman build -t icr.io/test_icr/ibm-cloud-info:latest . && \
-podman login icr.io -u iamapikey -p zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil && \
+podman login icr.io -u iamapikey -p ibm-cloud-api-key && \
 podman push icr.io/test_icr/ibm-cloud-info:latest && \
 cd terraform && \
 terraform init && \
@@ -113,7 +113,7 @@ IBM Cloud CLI puede hacer el build y push por ti sin necesidad de Docker/Podman:
 
 ```bash
 # Login a IBM Cloud
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 
 # Configurar región
 ibmcloud cr region-set us-south
@@ -136,7 +136,7 @@ Esta es la forma más simple y no requiere Docker ni Podman:
 
 ```bash
 # 1. Login
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 
 # 2. Configurar región
 ibmcloud cr region-set us-south

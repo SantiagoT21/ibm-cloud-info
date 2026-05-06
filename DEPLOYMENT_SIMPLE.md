@@ -23,7 +23,7 @@ ibmcloud plugin install code-engine -f
 
 ```bash
 # Login a IBM Cloud
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil
+ibmcloud login --apikey ibm-cloud-api-key
 
 # Configurar región
 ibmcloud cr region-set us-south
@@ -85,7 +85,7 @@ terraform output
 Si quieres hacer todo en un solo comando:
 
 ```bash
-ibmcloud login --apikey zLn7cRyoBQReEVI1YcrtZJL_vkxiT6RjEiikqjQWbGil && \
+ibmcloud login --apikey ibm-cloud-api-key && \
 ibmcloud cr region-set us-south && \
 ibmcloud cr build -t icr.io/test_icr/ibm-cloud-info:latest . && \
 cd terraform && \
