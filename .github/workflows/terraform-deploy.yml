@@ -64,8 +64,24 @@ jobs:
             echo "Namespace ${NAMESPACE} already exists"
           fi
 
+      - name: Extract registry credentials
+        id: registry-creds
+        run: |
+          # Get the token from ibmcloud cr login
+          TOKEN=$(ibmcloud cr token-get | grep Token | awk '{print $2}')
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "registry=icr.io" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Login to IBM Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.registry-creds.outputs.registry }}
+          username: iamapikey
+          password: ${{ secrets.IBM_CLOUD_API_KEY }}
 
       - name: Generate image metadata
         id: meta
