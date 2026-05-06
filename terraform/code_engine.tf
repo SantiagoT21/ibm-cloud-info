@@ -31,9 +31,18 @@ resource "ibm_code_engine_app" "app" {
   image_port      = var.container_port
   image_secret    = ibm_code_engine_secret.registry_secret.name
   
-  # Minimal scaling configuration
-  scale_cpu_limit    = var.cpu
-  scale_memory_limit = var.memory
+  # Scaling configuration
+  scale_cpu_limit      = var.cpu
+  scale_memory_limit   = var.memory
+  scale_min_instances  = var.min_scale
+  scale_max_instances  = var.max_scale
+  scale_request_timeout = var.request_timeout
+  
+  # Increase deployment timeout to 20 minutes
+  timeouts {
+    create = "20m"
+    update = "20m"
+  }
 
   lifecycle {
     # Create new version before destroying old one (zero-downtime updates)
