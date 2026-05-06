@@ -12,6 +12,7 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+terraform.tfvars
 
 # Terraform lock file (optional - some teams commit this)
 # .terraform.lock.hcl
