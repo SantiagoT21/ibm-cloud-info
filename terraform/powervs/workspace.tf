@@ -14,10 +14,3 @@ resource "ibm_pi_workspace" "workspace" {
     delete = "30m"
   }
 }
-
-# Wait for workspace to be fully ready
-resource "time_sleep" "wait_for_workspace" {
-  depends_on = [ibm_pi_workspace.workspace]
-  
-  create_duration = "60s"
-}

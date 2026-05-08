@@ -1,7 +1,7 @@
 # Get public network information
 # PowerVS provides a public network that can be attached to instances
 data "ibm_pi_public_network" "public_network" {
-  depends_on = [time_sleep.wait_for_workspace]
+  depends_on = [ibm_pi_workspace.workspace]
   
   pi_cloud_instance_id = ibm_pi_workspace.workspace.id
 }

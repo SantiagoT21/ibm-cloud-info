@@ -1,7 +1,7 @@
 # Create PowerVS Instance (LPAR)
 resource "ibm_pi_instance" "instance" {
   depends_on = [
-    time_sleep.wait_for_network,
+    ibm_pi_network.private_network,
     ibm_pi_key.ssh_key,
     data.ibm_pi_image.os_image
   ]
@@ -43,11 +43,4 @@ resource "ibm_pi_instance" "instance" {
     update = "30m"
     delete = "30m"
   }
-}
-
-# Wait for instance to be fully ready and user-data to execute
-resource "time_sleep" "wait_for_instance" {
-  depends_on = [ibm_pi_instance.instance]
-  
-  create_duration = "120s"
 }

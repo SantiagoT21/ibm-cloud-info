@@ -1,6 +1,6 @@
 # Create SSH key for instance access
 resource "ibm_pi_key" "ssh_key" {
-  depends_on = [time_sleep.wait_for_workspace]
+  depends_on = [ibm_pi_workspace.workspace]
   
   pi_cloud_instance_id = ibm_pi_workspace.workspace.id
   pi_key_name          = var.ssh_key_name
