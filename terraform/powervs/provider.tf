@@ -6,6 +6,10 @@ terraform {
       source  = "IBM-Cloud/ibm"
       version = "~> 1.63.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.12.0"
+    }
   }
 
   # Optional: Configure backend for state management
