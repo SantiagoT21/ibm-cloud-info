@@ -1,680 +1,397 @@
 # IBM Cloud Info - Multi-Platform Deployment
 
-[![Build and Push Docker Image](https://github.com/YOUR_USERNAME/ibm-cloud-info/actions/workflows/docker-build.yml/badge.svg)](https://github.com/YOUR_USERNAME/ibm-cloud-info/actions/workflows/docker-build.yml)
-[![Terraform Deploy](https://github.com/YOUR_USERNAME/ibm-cloud-info/actions/workflows/terraform-deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/ibm-cloud-info/actions/workflows/terraform-deploy.yml)
+[![Deploy to Code Engine](https://github.com/SantiagoT21/ibm-cloud-info/actions/workflows/terraform-deploy.yml/badge.svg)](https://github.com/SantiagoT21/ibm-cloud-info/actions/workflows/terraform-deploy.yml)
+[![Deploy to PowerVS](https://github.com/SantiagoT21/ibm-cloud-info/actions/workflows/powervs-deploy.yml/badge.svg)](https://github.com/SantiagoT21/ibm-cloud-info/actions/workflows/powervs-deploy.yml)
 
-Proyecto de demostración que despliega una aplicación web informativa sobre IBM Cloud con **dos opciones de deployment**:
+Aplicación web informativa sobre IBM Cloud desplegada automáticamente en múltiples plataformas usando Terraform y GitHub Actions.
 
-1. **🚀 Code Engine** (Serverless) - Deployment rápido y económico
-2. **⚡ PowerVS** (LPAR) - Control total con arquitectura POWER
+## 🚀 Plataformas Soportadas
 
-Ambos deployments utilizan Terraform para infraestructura como código.
+### 1. IBM Cloud Code Engine (Serverless)
+- ✅ **Deployment automático** con cada push
+- ✅ **Build de imagen Docker** incluido
+- ✅ **Zero downtime** con rolling updates
+- ✅ **Tier gratuito** disponible
+- ✅ **Escalado automático** 0-10 instancias
+- ⏱️ **Tiempo**: ~10-15 minutos
 
-## 📋 Tabla de Contenidos
+### 2. IBM PowerVS (Bare Metal)
+- ✅ **Deployment automático** con GitHub Actions
+- ✅ **SSH keys** generados automáticamente
+- ✅ **Control total** del sistema
+- ✅ **Arquitectura POWER** (AIX/IBM i compatible)
+- ✅ **Acceso SSH** completo
+- ⏱️ **Tiempo**: ~20-30 minutos
 
-- [Descripción](#descripción)
-- [Opciones de Deployment](#opciones-de-deployment)
-- [Arquitectura](#arquitectura)
-- [Guías de Deployment](#guías-de-deployment)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Comparación de Plataformas](#comparación-de-plataformas)
-- [Recursos Adicionales](#recursos-adicionales)
+## 📋 Inicio Rápido
 
-## 🎯 Descripción
+### Opción 1: Code Engine (Recomendado para empezar)
 
-Este proyecto despliega una aplicación web estática que presenta información detallada sobre IBM Cloud y sus ventajas empresariales, incluyendo:
+```bash
+# 1. Configurar secrets en GitHub
+# - IBM_CLOUD_API_KEY
+# - IBM_CLOUD_REGION
+# - IBM_CLOUD_RESOURCE_GROUP
+# - ICR_NAMESPACE
 
-- 🔒 **Seguridad Empresarial**: Certificaciones, cifrado, IAM
-- 📈 **Escalabilidad**: Auto-scaling, distribución global
-- 🤖 **IA/ML**: Watson AI, AutoML, MLOps
-- 💰 **Optimización de Costos**: Modelos de precios, herramientas de gestión
+# 2. Push a main
+git push origin main
 
-## 🚀 Opciones de Deployment
+# 3. GitHub Actions despliega automáticamente
+# 4. Obtén la URL del summary en Actions
+```
 
-Este proyecto ofrece **dos opciones de deployment** para diferentes necesidades:
+**Costo**: Gratis (tier gratuito) o ~$0-20/mes
 
-### Opción 1: Code Engine (Serverless) 🚀
+### Opción 2: PowerVS (Para workloads enterprise)
 
-**Ideal para**: Aplicaciones web, microservicios, prototipos, demos
+```bash
+# 1. Configurar los mismos secrets de Code Engine
 
-**Características**:
-- ✅ Deployment en minutos (2-5 min)
-- ✅ Auto-scaling automático (0-10 instancias)
-- ✅ Scale-to-zero (costo $0 sin tráfico)
-- ✅ HTTPS automático
-- ✅ CI/CD con GitHub Actions
-- ✅ Contenedor Docker con nginx
-- 💰 **Costo**: $0-5/mes
+# 2. Ejecutar workflow manualmente
+# Actions → Deploy to IBM PowerVS → Run workflow
 
-**Documentación**: Ver [DEPLOYMENT_GITHUB.md](DEPLOYMENT_GITHUB.md)
+# 3. Esperar ~20-30 minutos
+# 4. Descargar SSH key de artifacts
+# 5. Conectar: ssh -i powervs_key root@<ip>
+```
 
-### Opción 2: PowerVS (LPAR) ⚡
-
-**Ideal para**: Workloads enterprise, aplicaciones que requieren control total, migración de AIX/IBM i
-
-**Características**:
-- ✅ Control total del sistema operativo (root access)
-- ✅ Arquitectura IBM POWER (ppc64le)
-- ✅ Rocky Linux 9 (gratuito)
-- ✅ Recursos dedicados y predecibles
-- ✅ IP pública fija
-- ✅ Infraestructura como código con Terraform
-- 💰 **Costo**: $43-60/mes (configuración mínima)
-
-**Documentación**: Ver [DEPLOYMENT_POWERVS.md](DEPLOYMENT_POWERVS.md)
+**Costo**: ~$43-60/mes (configuración mínima)
 
 ## 🏗️ Arquitectura
 
-## 🏗️ Arquitectura Multi-Plataforma
-
-Este proyecto soporta dos arquitecturas de deployment diferentes:
-
-### Arquitectura Code Engine (Serverless)
-
+### Code Engine
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    GitHub Repository                         │
-│                      (Source Code)                           │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-        ┌────────────┴────────────┐
-        │                         │
-        ▼                         ▼
-┌──────────────────┐    ┌──────────────────┐
-│ GitHub Actions   │    │ GitHub Actions   │
-│ Docker Build     │    │ Terraform Deploy │
-└────────┬─────────┘    └────────┬─────────┘
-         │                       │
-         ▼                       ▼
-┌──────────────────┐    ┌──────────────────┐
-│ IBM Container    │    │  IBM Cloud       │
-│   Registry       │───▶│  Code Engine     │
-└──────────────────┘    └────────┬─────────┘
-                                 │
-                                 ▼
-                        ┌──────────────────┐
-                        │   Public URL     │
-                        │  (HTTPS Auto)    │
-                        │  Auto-scaling    │
-                        └──────────────────┘
+GitHub Push
+    ↓
+Build Docker Image (2-3 min)
+    ↓
+Push to IBM Container Registry
+    ↓
+Terraform Deploy (2 min)
+    ↓
+Code Engine Rolling Update (3-5 min)
+    ↓
+✅ App Running (Zero Downtime)
 ```
 
-### Arquitectura PowerVS (LPAR)
-
+### PowerVS
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Terraform Configuration                   │
-│                  (Infrastructure as Code)                    │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│              IBM Cloud - PowerVS Workspace                   │
-│                                                              │
-│  ┌────────────────────────────────────────────────┐         │
-│  │         Private Network (192.168.0.0/24)       │         │
-│  │                                                 │         │
-│  │   ┌─────────────────────────────────────┐      │         │
-│  │   │  LPAR - Rocky Linux 9 (POWER)       │      │         │
-│  │   │  ├─ 0.25 cores, 2GB RAM, 20GB       │      │         │
-│  │   │  ├─ Nginx Web Server                │      │         │
-│  │   │  ├─ Firewalld Security              │      │         │
-│  │   │  └─ SSH Access                      │      │         │
-│  │   │                                      │      │         │
-│  │   │  Private IP: 192.168.0.x             │      │         │
-│  │   └──────────────┬──────────────────────┘      │         │
-│  │                  │                              │         │
-│  └──────────────────┼──────────────────────────────┘         │
-│                     │                                        │
-│                     ▼                                        │
-│         ┌──────────────────────┐                            │
-│         │   Public Network     │                            │
-│         │   Fixed Public IP    │                            │
-│         └──────────────────────┘                            │
-└─────────────────────────────────────────────────────────────┘
-                     │
-                     ▼
-              Internet Access
-            http://PUBLIC_IP
-
+GitHub Push/Manual
+    ↓
+Terraform Validate (2 min)
+    ↓
+Terraform Plan (3 min)
+    ↓
+Terraform Apply (15-30 min)
+    ├─ Create Workspace
+    ├─ Setup Networks
+    ├─ Create LPAR
+    └─ Install Application
+    ↓
+✅ App Running on POWER
 ```
 
-## 📚 Guías de Deployment
-
-Selecciona la guía según tu necesidad:
-
-| Plataforma | Guía | Tiempo | Costo Mensual | Complejidad |
-|------------|------|--------|---------------|-------------|
-| **Code Engine** | [DEPLOYMENT_GITHUB.md](DEPLOYMENT_GITHUB.md) | 5 min | $0-5 | ⭐ Fácil |
-| **PowerVS** | [DEPLOYMENT_POWERVS.md](DEPLOYMENT_POWERVS.md) | 30 min | $43-60 | ⭐⭐⭐ Avanzado |
-
-### Inicio Rápido - Code Engine
-
-```bash
-# 1. Clonar repositorio
-git clone https://github.com/YOUR_USERNAME/ibm-cloud-info.git
-cd ibm-cloud-info
-
-# 2. Configurar variables
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Editar terraform.tfvars con tu API key
-
-# 3. Desplegar
-terraform init
-terraform apply
-```
-
-### Inicio Rápido - PowerVS
-
-```bash
-# 1. Clonar repositorio
-git clone https://github.com/YOUR_USERNAME/ibm-cloud-info.git
-cd ibm-cloud-info
-
-# 2. Generar SSH key
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/powervs_key
-
-# 3. Configurar variables
-cd terraform/powervs
-cp terraform.tfvars.example terraform.tfvars
-# Editar terraform.tfvars con tu API key y SSH public key
-
-# 4. Desplegar
-terraform init
-terraform apply
-```
-
-
-```
 ## 📁 Estructura del Proyecto
 
 ```
-ibm-cloud-info/
-├── .github/
-│   └── workflows/
-│       ├── docker-build.yml           # CI/CD para Code Engine
-│       └── terraform-deploy.yml       # Deployment automatizado
-├── terraform/
-│   ├── provider.tf                    # Provider para Code Engine
-│   ├── variables.tf                   # Variables de Code Engine
-│   ├── main.tf                        # Resource group y proyecto
-│   ├── code_engine.tf                 # Aplicación Code Engine
-│   ├── outputs.tf                     # Outputs de Code Engine
-│   ├── terraform.tfvars.example       # Ejemplo de variables
-│   └── powervs/                       # ⚡ NUEVO: Módulo PowerVS
-│       ├── provider.tf                # Provider para PowerVS
-│       ├── variables.tf               # Variables de PowerVS
-│       ├── data.tf                    # Data sources (imágenes, etc)
-│       ├── workspace.tf               # PowerVS Workspace
-│       ├── network.tf                 # Red privada
-│       ├── public_network.tf          # Red pública
-│       ├── security.tf                # SSH keys
-│       ├── instance.tf                # LPAR configuration
-│       ├── outputs.tf                 # Outputs de PowerVS
-│       └── terraform.tfvars.example   # Ejemplo de variables
-├── scripts/
-│   ├── init.sh                        # Script de inicialización
-│   └── powervs-setup.sh               # ⚡ NUEVO: Setup de LPAR
+.
+├── .github/workflows/
+│   ├── terraform-deploy.yml      # Code Engine CI/CD
+│   └── powervs-deploy.yml        # PowerVS CI/CD
 ├── src/
-│   └── index.html                     # Aplicación web
-├── Dockerfile                         # Container para Code Engine
-├── README.md                          # Este archivo
-├── DEPLOYMENT_GITHUB.md               # Guía Code Engine
-└── DEPLOYMENT_POWERVS.md              # ⚡ NUEVO: Guía PowerVS
+│   └── index.html                # Aplicación web
+├── terraform/
+│   ├── code_engine.tf            # Code Engine resources
+│   ├── main.tf                   # Project configuration
+│   ├── variables.tf              # Variables
+│   └── powervs/                  # PowerVS module
+│       ├── instance.tf
+│       ├── network.tf
+│       ├── workspace.tf
+│       └── ...
+├── scripts/
+│   ├── build-and-push-image.sh   # Build Docker local
+│   ├── manage-codeengine-app.sh  # Gestión de apps
+│   ├── diagnose-codeengine.sh    # Diagnóstico
+│   ├── fix-disabled-project.sh   # Fix proyectos
+│   └── powervs-setup.sh          # Setup PowerVS
+├── Dockerfile                     # Imagen Docker
+├── nginx.conf                     # Configuración nginx
+└── docs/                          # Documentación
 ```
 
-## 📊 Comparación de Plataformas
+## 📚 Documentación Completa
 
-| Característica | Code Engine 🚀 | PowerVS ⚡ |
-|----------------|----------------|-----------|
-| **Tipo** | Serverless (PaaS) | IaaS (VM dedicada) |
-| **Arquitectura** | x86_64 | POWER (ppc64le) |
-| **OS** | Container (Alpine) | Rocky Linux 9 |
-| **Deployment** | 2-5 minutos | 15-30 minutos |
-| **Escalabilidad** | Auto (0-10 instancias) | Manual |
-| **Costo Mensual** | $0-5 | $43-60+ |
-| **Control** | Limitado | Total (root access) |
-| **Mantenimiento** | Automático | Manual |
-| **Scale-to-Zero** | ✅ Sí | ❌ No |
-| **IP Pública** | Dinámica | Fija |
-| **HTTPS** | Automático | Manual |
-| **Ideal Para** | Apps web, APIs, demos | Enterprise, AIX, IBM i |
+### Guías de Deployment
 
-### ¿Cuál elegir?
+| Documento | Descripción |
+|-----------|-------------|
+| [GITHUB_ACTIONS_DEPLOYMENT.md](GITHUB_ACTIONS_DEPLOYMENT.md) | Guía completa de Code Engine con GitHub Actions |
+| [POWERVS_GITHUB_ACTIONS.md](POWERVS_GITHUB_ACTIONS.md) | Guía completa de PowerVS con GitHub Actions |
+| [GUIA_COMPLETA_DEPLOYMENT.md](GUIA_COMPLETA_DEPLOYMENT.md) | Guía general de deployment |
+| [DEPLOYMENT_SIMPLE.md](DEPLOYMENT_SIMPLE.md) | Deployment simple paso a paso |
 
-**Elige Code Engine si**:
-- ✅ Necesitas deployment rápido
-- ✅ Quieres minimizar costos
-- ✅ Tu app es stateless
-- ✅ No necesitas acceso root
-- ✅ Prefieres mantenimiento automático
+### Troubleshooting y Optimización
 
-**Elige PowerVS si**:
-- ✅ Necesitas control total del OS
-- ✅ Requieres arquitectura POWER
-- ✅ Migras desde AIX o IBM i
-- ✅ Necesitas recursos dedicados
-- ✅ Requieres IP fija
+| Documento | Descripción |
+|-----------|-------------|
+| [TERRAFORM_ICR_SETUP.md](TERRAFORM_ICR_SETUP.md) | Configuración de IBM Container Registry |
+| [PROYECTO_DESHABILITADO.md](PROYECTO_DESHABILITADO.md) | Resolver proyectos deshabilitados |
+| [TROUBLESHOOTING_TIMEOUT.md](TROUBLESHOOTING_TIMEOUT.md) | Resolver timeouts de deployment |
+| [MANEJO_APPS_EXISTENTES.md](MANEJO_APPS_EXISTENTES.md) | Gestión de apps existentes |
+| [ACTUALIZACION_EFICIENTE.md](ACTUALIZACION_EFICIENTE.md) | Optimización de actualizaciones |
 
-## 🛠️ Comandos Útiles
+### Deployment Específico
+
+| Documento | Descripción |
+|-----------|-------------|
+| [DEPLOYMENT_GITHUB.md](DEPLOYMENT_GITHUB.md) | Deployment con GitHub Actions |
+| [DEPLOYMENT_POWERVS.md](DEPLOYMENT_POWERVS.md) | Deployment en PowerVS |
+
+## 🛠️ Scripts de Ayuda
 
 ### Code Engine
 
 ```bash
-# Ver aplicaciones
-ibmcloud ce application list
+# Construir y subir imagen
+./scripts/build-and-push-image.sh
 
-# Ver logs
-ibmcloud ce application logs --name ibm-cloud-info-app
+# Gestionar aplicaciones
+./scripts/manage-codeengine-app.sh
 
-# Ver detalles
-ibmcloud ce application get --name ibm-cloud-info-app
+# Diagnóstico completo
+./scripts/diagnose-codeengine.sh
+
+# Resolver proyecto deshabilitado
+./scripts/fix-disabled-project.sh
 ```
 
 ### PowerVS
 
 ```bash
-# Listar workspaces
-ibmcloud pi service-list
-
-# Listar instancias
-ibmcloud pi instances
-
-# Conectar por SSH
-ssh -i ~/.ssh/powervs_key root@PUBLIC_IP
-```
-
-### Terraform
-
-```bash
-# Code Engine
-cd terraform
-terraform init
-terraform plan
-terraform apply
-
-# PowerVS
+# Deployment local
 cd terraform/powervs
 terraform init
 terraform plan
 terraform apply
-```
-
-### 2. Configurar Variables de Terraform
-
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-```
-
-Editar `terraform.tfvars` con tus valores:
-
-```hcl
-ibmcloud_api_key    = "YOUR_IBM_CLOUD_API_KEY"
-region              = "us-south"
-resource_group_name = "Default"
-container_image     = "icr.io/YOUR_NAMESPACE/ibm-cloud-info:latest"
-```
-
-### 3. Configurar GitHub Secrets
-
-Ve a tu repositorio en GitHub: `Settings > Secrets and variables > Actions > New repository secret`
-
-Agrega los siguientes secrets:
-
-| Secret Name | Description | Example |
-|-------------|-------------|---------|
-| `IBM_CLOUD_API_KEY` | Tu IBM Cloud API Key | `abc123...` |
-| `IBM_CLOUD_REGION` | Región de IBM Cloud | `us-south` |
-| `IBM_CLOUD_RESOURCE_GROUP` | Nombre del Resource Group | `Default` |
-| `ICR_NAMESPACE` | Namespace de Container Registry | `my-namespace` |
-
-## 🚀 Deployment Local
-
-### Opción 1: Deployment Completo con Terraform
-
-```bash
-# 1. Build de la imagen Docker
-docker build -t icr.io/YOUR_NAMESPACE/ibm-cloud-info:latest .
-
-# 2. Login a IBM Container Registry
-ibmcloud cr login
-
-# 3. Push de la imagen
-docker push icr.io/YOUR_NAMESPACE/ibm-cloud-info:latest
-
-# 4. Inicializar Terraform
-cd terraform
-terraform init
-
-# 5. Planificar cambios
-terraform plan
-
-# 6. Aplicar cambios
-terraform apply
-
-# 7. Obtener la URL de la aplicación
-terraform output application_url
-```
-
-### Opción 2: Test Local con Docker
-
-```bash
-# Build de la imagen
-docker build -t ibm-cloud-info:local .
-
-# Ejecutar localmente
-docker run -p 8080:8080 ibm-cloud-info:local
-
-# Acceder a http://localhost:8080
-```
-
-## 🔄 Deployment con GitHub Actions
-
-### Deployment Automático
-
-El deployment se ejecuta automáticamente cuando:
-
-1. **Push a main**: Cualquier cambio en `src/`, `Dockerfile`, o `terraform/`
-2. **Pull Request**: Se ejecuta plan de Terraform (sin aplicar)
-3. **Manual**: Desde la pestaña Actions en GitHub
-
-### Flujo de Trabajo
-
-```mermaid
-graph LR
-    A[Push to main] --> B[Docker Build]
-    B --> C[Push to ICR]
-    C --> D[Trigger Terraform]
-    D --> E[Terraform Apply]
-    E --> F[App Deployed]
-```
-
-### Ejecución Manual
-
-1. Ve a la pestaña **Actions** en GitHub
-2. Selecciona el workflow deseado
-3. Click en **Run workflow**
-4. Selecciona la acción (plan/apply/destroy)
-
-## 📁 Estructura del Proyecto
-
-```
-ibm-cloud-info/
-├── .github/
-│   └── workflows/
-│       ├── docker-build.yml      # Build y push de Docker
-│       └── terraform-deploy.yml  # Deployment con Terraform
-├── terraform/
-│   ├── provider.tf               # Configuración del provider
-│   ├── variables.tf              # Variables de Terraform
-│   ├── main.tf                   # Resource group y proyecto
-│   ├── code_engine.tf            # Aplicación Code Engine
-│   ├── outputs.tf                # Outputs de Terraform
-│   └── terraform.tfvars.example  # Plantilla de variables
-├── src/
-│   └── index.html                # Aplicación web
-├── Dockerfile                    # Configuración de Docker
-├── .gitignore                    # Archivos ignorados
-├── .env.example                  # Plantilla de variables de entorno
-└── README.md                     # Este archivo
-```
-
-## 🔄 Actualización del HTML
-
-Para actualizar el contenido de la aplicación:
-
-1. **Editar el HTML**:
-   ```bash
-   vim src/index.html
-   # Hacer tus cambios
-   ```
-
-2. **Commit y Push**:
-   ```bash
-   git add src/index.html
-   git commit -m "Update: descripción de cambios"
-   git push origin main
-   ```
-
-3. **Deployment Automático**:
-   - GitHub Actions detecta el cambio
-   - Build de nueva imagen Docker
-   - Push a IBM Container Registry
-   - Terraform actualiza Code Engine
-   - Nueva versión disponible en ~5 minutos
-
-## 🛠️ Comandos Útiles
-
-### Terraform
-
-```bash
-# Ver estado actual
-terraform show
 
 # Ver outputs
 terraform output
-
-# Refrescar estado
-terraform refresh
-
-# Destruir infraestructura
-terraform destroy
-
-# Formatear archivos
-terraform fmt -recursive
-
-# Validar configuración
-terraform validate
 ```
 
-### Docker
+## 🔧 Configuración
 
-```bash
-# Ver imágenes locales
-docker images
+### Secrets de GitHub (Requeridos)
 
-# Ver contenedores en ejecución
-docker ps
-
-# Ver logs del contenedor
-docker logs CONTAINER_ID
-
-# Limpiar imágenes no usadas
-docker image prune -a
+```yaml
+IBM_CLOUD_API_KEY: "tu-api-key"
+IBM_CLOUD_REGION: "us-south"
+IBM_CLOUD_RESOURCE_GROUP: "Default"
+ICR_NAMESPACE: "test_icr"  # Solo para Code Engine
 ```
 
-### IBM Cloud CLI
+### Variables de Terraform
 
-```bash
-# Login
-ibmcloud login --apikey YOUR_API_KEY
+#### Code Engine (`terraform/terraform.tfvars`)
 
-# Ver proyectos de Code Engine
-ibmcloud ce project list
-
-# Ver aplicaciones
-ibmcloud ce application list
-
-# Ver logs de la aplicación
-ibmcloud ce application logs --name ibm-cloud-info-app
-
-# Ver detalles de la aplicación
-ibmcloud ce application get --name ibm-cloud-info-app
+```hcl
+ibmcloud_api_key    = "tu-api-key"
+region              = "us-south"
+project_name        = "ibm-cloud-info"
+app_name            = "ibm-cloud-info-app"
+container_image     = "icr.io/test_icr/ibm-cloud-info:latest"
+container_port      = 8080
+cpu                 = "0.25"
+memory              = "0.5G"
+min_scale           = 0
+max_scale           = 10
 ```
 
-## 🔍 Troubleshooting
+#### PowerVS (`terraform/powervs/terraform.tfvars`)
 
-### Error: "Failed to authenticate with IBM Cloud"
-
-**Solución**: Verifica que tu API Key sea válida:
-```bash
-ibmcloud login --apikey YOUR_API_KEY
+```hcl
+ibmcloud_api_key      = "tu-api-key"
+powervs_zone          = "dal12"
+instance_processors   = 0.25
+instance_memory       = 2
+instance_storage_size = 20
+ssh_public_key        = "ssh-rsa AAAA..."
 ```
 
-### Error: "Namespace not found in Container Registry"
+## 🎯 Características
 
-**Solución**: Crea el namespace:
-```bash
-ibmcloud cr namespace-add YOUR_NAMESPACE
-```
+### Aplicación Web
 
-### Error: "Resource group not found"
+- ✅ **Responsive** - Funciona en móvil y desktop
+- ✅ **Información completa** sobre IBM Cloud
+- ✅ **Diseño moderno** con gradientes
+- ✅ **Optimizada** para rendimiento
+- ✅ **SEO friendly**
 
-**Solución**: Lista los resource groups disponibles:
-```bash
-ibmcloud resource groups
-```
+### Infraestructura
 
-### La aplicación no responde
+- ✅ **Infrastructure as Code** con Terraform
+- ✅ **CI/CD completo** con GitHub Actions
+- ✅ **Zero downtime** deployments
+- ✅ **Rollback fácil** con Git
+- ✅ **Monitoreo** integrado
+- ✅ **Logs** centralizados
 
-**Solución**: Verifica los logs:
-```bash
-ibmcloud ce application logs --name ibm-cloud-info-app --follow
-```
+### Seguridad
 
-### GitHub Actions falla
-
-**Solución**: 
-1. Verifica que todos los secrets estén configurados
-2. Revisa los logs en la pestaña Actions
-3. Verifica permisos de la API Key
+- ✅ **HTTPS** automático
+- ✅ **Secrets** gestionados por GitHub
+- ✅ **SSH keys** generados automáticamente
+- ✅ **Registry privado** para imágenes
+- ✅ **IAM** de IBM Cloud
+- ✅ **Scan de vulnerabilidades**
 
 ## 💰 Costos
 
 ### Code Engine
 
-- **Nivel Gratuito**: 
-  - 100,000 vCPU-segundos/mes
-  - 200,000 GB-segundos/mes
-  - Suficiente para desarrollo y demos
+| Configuración | Costo/Mes |
+|---------------|-----------|
+| Tier gratuito | $0 |
+| Uso ligero | $0-10 |
+| Uso moderado | $10-50 |
+| Uso intensivo | $50-200 |
 
-- **Costos Estimados** (después del nivel gratuito):
-  - vCPU: $0.00003/vCPU-segundo
-  - Memoria: $0.0000033/GB-segundo
-  - Requests: Gratis
+### PowerVS
 
-### Container Registry
+| Configuración | Cores | RAM | Costo/Mes |
+|---------------|-------|-----|-----------|
+| Mínima | 0.25 | 2GB | $43-60 |
+| Pequeña | 0.5 | 4GB | $86-120 |
+| Media | 1.0 | 8GB | $172-240 |
+| Grande | 2.0 | 16GB | $344-480 |
 
-- **Nivel Gratuito**: 
-  - 500 MB de almacenamiento
-  - 5 GB de tráfico pull/mes
+## 🔄 Workflow de Desarrollo
 
-### Estimación Mensual
+### Para Cambios en la Aplicación
 
-Para una aplicación de demo con tráfico bajo:
-- **Costo estimado**: $0-5 USD/mes
-- Con scale-to-zero: ~$0 cuando no hay tráfico
+```bash
+# 1. Crear branch
+git checkout -b feature/nueva-funcionalidad
 
-## 📚 Recursos Adicionales
+# 2. Hacer cambios
+vim src/index.html
 
-- [IBM Cloud Code Engine Docs](https://cloud.ibm.com/docs/codeengine)
-- [Terraform IBM Provider](https://registry.terraform.io/providers/IBM-Cloud/ibm/latest/docs)
-- [IBM Container Registry](https://cloud.ibm.com/docs/Registry)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+# 3. Commit y push
+git add .
+git commit -m "feat: add new section"
+git push origin feature/nueva-funcionalidad
 
-## 🤝 Contribuciones
+# 4. Crear PR en GitHub
+# 5. Revisar plan de Terraform en PR
+# 6. Aprobar y merge
+# 7. Deployment automático a Code Engine
+```
 
-Las contribuciones son bienvenidas. Por favor:
+### Para Cambios en Infraestructura
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
+```bash
+# 1. Crear branch
+git checkout -b infra/update-resources
+
+# 2. Modificar Terraform
+vim terraform/code_engine.tf
+
+# 3. Push y crear PR
+git push origin infra/update-resources
+
+# 4. Revisar plan en PR
+# 5. Aprobar y merge
+# 6. Terraform apply automático
+```
+
+## 🧪 Testing
+
+### Local
+
+```bash
+# Build imagen
+docker build -t ibm-cloud-info .
+
+# Run localmente
+docker run -p 8080:8080 ibm-cloud-info
+
+# Test
+curl http://localhost:8080
+```
+
+### En GitHub Actions
+
+- ✅ Validación automática en PRs
+- ✅ Plan de Terraform visible
+- ✅ Health checks post-deployment
+- ✅ Rollback automático si falla
+
+## 📊 Monitoreo
+
+### Code Engine
+
+```bash
+# Ver logs
+ibmcloud ce app logs --app ibm-cloud-info-app --tail 100
+
+# Ver métricas
+ibmcloud ce app get --name ibm-cloud-info-app
+
+# Ver eventos
+ibmcloud ce app events --app ibm-cloud-info-app
+```
+
+### PowerVS
+
+```bash
+# Conectar por SSH
+ssh -i powervs_key root@<ip>
+
+# Ver logs
+journalctl -u ibm-cloud-info -f
+
+# Ver status
+systemctl status ibm-cloud-info
+```
+
+## 🤝 Contribuir
+
+1. Fork el repositorio
+2. Crea una branch (`git checkout -b feature/amazing`)
+3. Commit tus cambios (`git commit -m 'Add amazing feature'`)
+4. Push a la branch (`git push origin feature/amazing`)
 5. Abre un Pull Request
 
 ## 📝 Licencia
 
-Este proyecto es de código abierto y está disponible bajo la licencia MIT.
+Este proyecto está bajo la licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
 
 ## 👤 Autor
 
-Tu Nombre - [@tu_twitter](https://twitter.com/tu_twitter)
+**Santiago Tamayo**
+- Email: stamayo@co.ibm.com
+- GitHub: [@SantiagoT21](https://github.com/SantiagoT21)
 
-Proyecto Link: [https://github.com/YOUR_USERNAME/ibm-cloud-info](https://github.com/YOUR_USERNAME/ibm-cloud-info)
+## 🙏 Agradecimientos
 
----
+- IBM Cloud Team
+- Terraform Community
+- GitHub Actions Team
 
-⭐ Si este proyecto te fue útil, considera darle una estrella en GitHub!
-## 📚 Recursos Adicionales
+## 📞 Soporte
 
-### Documentación Oficial
+Si tienes problemas:
 
-- [IBM Cloud Code Engine](https://cloud.ibm.com/docs/codeengine)
-- [IBM PowerVS Documentation](https://cloud.ibm.com/docs/power-iaas)
-- [Terraform IBM Provider](https://registry.terraform.io/providers/IBM-Cloud/ibm/latest/docs)
-- [Rocky Linux Documentation](https://docs.rockylinux.org/)
-
-### Guías Específicas
-
-- **Code Engine**: [DEPLOYMENT_GITHUB.md](DEPLOYMENT_GITHUB.md) - Deployment completo con CI/CD
-- **PowerVS**: [DEPLOYMENT_POWERVS.md](DEPLOYMENT_POWERVS.md) - Deployment en LPAR con Rocky Linux
-- **Deployment Simple**: [DEPLOYMENT_SIMPLE.md](DEPLOYMENT_SIMPLE.md) - Deployment básico sin GitHub Actions
-- **Podman**: [PODMAN_GUIDE.md](PODMAN_GUIDE.md) - Uso de Podman en lugar de Docker
-
-### Calculadoras de Costos
-
-- [IBM Cloud Pricing Calculator](https://cloud.ibm.com/estimator)
-- [Code Engine Pricing](https://cloud.ibm.com/docs/codeengine?topic=codeengine-pricing)
-- [PowerVS Pricing](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-pricing-virtual-server)
-
-## 💡 Casos de Uso
-
-### Code Engine - Ideal Para:
-
-1. **Aplicaciones Web Modernas**
-   - SPAs (Single Page Applications)
-   - APIs RESTful
-   - Microservicios
-
-2. **Prototipos y Demos**
-   - Deployment rápido
-   - Costos mínimos
-   - Fácil de compartir
-
-3. **Aplicaciones con Tráfico Variable**
-   - Scale-to-zero cuando no hay uso
-   - Auto-scaling en picos de tráfico
-   - Optimización automática de costos
-
-### PowerVS - Ideal Para:
-
-1. **Migración de Workloads Legacy**
-   - Aplicaciones AIX
-   - IBM i (AS/400)
-   - Aplicaciones que requieren POWER
-
-2. **Aplicaciones Enterprise Críticas**
-   - Bases de datos de alto rendimiento
-   - ERP y sistemas core
-   - Aplicaciones que requieren recursos dedicados
-
-3. **Desarrollo y Testing**
-   - Entornos de desarrollo POWER
-   - Testing de compatibilidad
-   - Laboratorios de capacitación
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📝 Licencia
-
-Este proyecto es de código abierto y está disponible bajo la licencia MIT.
-
-## 👤 Autor
-
-Tu Nombre - [@tu_twitter](https://twitter.com/tu_twitter)
-
-Proyecto Link: [https://github.com/YOUR_USERNAME/ibm-cloud-info](https://github.com/YOUR_USERNAME/ibm-cloud-info)
+1. **Revisa la documentación** en la carpeta docs/
+2. **Ejecuta diagnóstico**: `./scripts/diagnose-codeengine.sh`
+3. **Revisa los logs** en GitHub Actions
+4. **Abre un issue** en GitHub
+5. **Contacta**: stamayo@co.ibm.com
 
 ---
 
-⭐ Si este proyecto te fue útil, considera darle una estrella en GitHub!
+**Made with ❤️ using IBM Cloud, Terraform, and GitHub Actions**
+
+🚀 **Deploy automático** | 🔒 **Seguro** | 📊 **Monitoreado** | 💰 **Optimizado**

@@ -1,0 +1,467 @@
+name: Deploy to IBM PowerVS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/powervs/**'
+      - 'scripts/powervs-setup.sh'
+      - '.github/workflows/powervs-deploy.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/powervs/**'
+      - 'scripts/powervs-setup.sh'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      powervs_zone:
+        description: 'PowerVS Zone'
+        required: false
+        default: 'dal12'
+        type: choice
+        options:
+          - dal12
+          - dal13
+          - lon06
+          - syd04
+          - syd05
+          - tok04
+          - wdc06
+          - wdc07
+          - sao01
+          - mon01
+
+env:
+  TF_VERSION: '1.6.0'
+  TF_WORKING_DIR: './terraform/powervs'
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Validation Summary
+        run: |
+          echo "## 🔍 Terraform Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Format**: \`${{ steps.fmt.outcome }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Init**: \`${{ steps.init.outcome }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Validate**: \`${{ steps.validate.outcome }}\`" >> $GITHUB_STEP_SUMMARY
+
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [validate]
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Generate SSH Key
+        id: ssh
+        run: |
+          ssh-keygen -t rsa -b 4096 -f ~/.ssh/powervs_key -N ""
+          SSH_PUBLIC_KEY=$(cat ~/.ssh/powervs_key.pub)
+          echo "::add-mask::$SSH_PUBLIC_KEY"
+          echo "public_key=$SSH_PUBLIC_KEY" >> $GITHUB_OUTPUT
+
+      - name: Create terraform.tfvars
+        run: |
+          cat > terraform.tfvars << EOF
+          ibmcloud_api_key    = "${{ secrets.IBM_CLOUD_API_KEY }}"
+          region              = "${{ secrets.IBM_CLOUD_REGION }}"
+          powervs_zone        = "${{ github.event.inputs.powervs_zone || 'dal12' }}"
+          resource_group_name = "${{ secrets.IBM_CLOUD_RESOURCE_GROUP }}"
+          
+          # Workspace
+          workspace_name = "ibm-cloud-info-ws"
+          
+          # Network
+          network_name = "ibm-cloud-info-net"
+          network_cidr = "192.168.0.0/24"
+          network_dns  = ["9.9.9.9", "1.1.1.1"]
+          
+          # Instance
+          instance_name         = "ibm-cloud-info-lpar"
+          instance_image_name   = "Rocky-Linux-9"
+          instance_processors   = 0.25
+          instance_memory       = 2
+          instance_proc_type    = "shared"
+          instance_sys_type     = "s922"
+          instance_storage_tier = "tier3"
+          instance_storage_size = 20
+          
+          # SSH
+          ssh_key_name   = "ibm-cloud-info-key"
+          ssh_public_key = "${{ steps.ssh.outputs.public_key }}"
+          
+          # Application
+          app_port = 80
+          
+          # Tags
+          tags = ["terraform", "powervs", "ibm-cloud-info", "github-actions"]
+          EOF
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=tfplan
+        continue-on-error: true
+
+      - name: Save Plan Output
+        run: |
+          terraform show -no-color tfplan > plan_output.txt
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
+            const output = `## 🏗️ PowerVS Terraform Plan
+            
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+            
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+            
+            </details>
+            
+            **Zone**: \`${{ github.event.inputs.powervs_zone || 'dal12' }}\`
+            **Instance**: 0.25 cores, 2GB RAM, 20GB storage
+            
+            *Pushed by: @${{ github.actor }}*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Plan Summary
+        run: |
+          echo "## 📋 Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Zone**: \`${{ github.event.inputs.powervs_zone || 'dal12' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Instance**: 0.25 cores, 2GB RAM, 20GB storage" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS**: Rocky Linux 9" >> $GITHUB_STEP_SUMMARY
+          echo "- **Plan Status**: \`${{ steps.plan.outcome }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
+          echo "- PowerVS deployment takes 15-30 minutes" >> $GITHUB_STEP_SUMMARY
+          echo "- Estimated cost: ~\$43-60/month" >> $GITHUB_STEP_SUMMARY
+          echo "- No free tier available" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-powervs
+          path: |
+            ${{ env.TF_WORKING_DIR }}/tfplan
+            ${{ env.TF_WORKING_DIR }}/plan_output.txt
+          retention-days: 30
+
+      - name: Upload SSH Key
+        if: github.event.inputs.action == 'apply' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssh-key-powervs
+          path: ~/.ssh/powervs_key*
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f terraform.tfvars
+          rm -f tfplan
+          rm -f plan_output.txt
+
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: [plan]
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+    environment:
+      name: powervs-production
+      url: ${{ steps.outputs.outputs.app_url }}
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-powervs
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Download SSH Key
+        uses: actions/download-artifact@v4
+        with:
+          name: ssh-key-powervs
+          path: ~/.ssh/
+
+      - name: Set SSH Key Permissions
+        run: |
+          chmod 600 ~/.ssh/powervs_key
+          chmod 644 ~/.ssh/powervs_key.pub
+
+      - name: Recreate terraform.tfvars
+        run: |
+          SSH_PUBLIC_KEY=$(cat ~/.ssh/powervs_key.pub)
+          cat > terraform.tfvars << EOF
+          ibmcloud_api_key    = "${{ secrets.IBM_CLOUD_API_KEY }}"
+          region              = "${{ secrets.IBM_CLOUD_REGION }}"
+          powervs_zone        = "${{ github.event.inputs.powervs_zone || 'dal12' }}"
+          resource_group_name = "${{ secrets.IBM_CLOUD_RESOURCE_GROUP }}"
+          workspace_name = "ibm-cloud-info-ws"
+          network_name = "ibm-cloud-info-net"
+          network_cidr = "192.168.0.0/24"
+          network_dns  = ["9.9.9.9", "1.1.1.1"]
+          instance_name         = "ibm-cloud-info-lpar"
+          instance_image_name   = "Rocky-Linux-9"
+          instance_processors   = 0.25
+          instance_memory       = 2
+          instance_proc_type    = "shared"
+          instance_sys_type     = "s922"
+          instance_storage_tier = "tier3"
+          instance_storage_size = 20
+          ssh_key_name   = "ibm-cloud-info-key"
+          ssh_public_key = "${SSH_PUBLIC_KEY}"
+          app_port = 80
+          tags = ["terraform", "powervs", "ibm-cloud-info", "github-actions"]
+          EOF
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -input=false tfplan
+
+      - name: Get Terraform Outputs
+        id: outputs
+        run: |
+          echo "app_url=$(terraform output -raw application_url)" >> $GITHUB_OUTPUT
+          echo "public_ip=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
+          echo "private_ip=$(terraform output -raw instance_private_ip)" >> $GITHUB_OUTPUT
+          echo "workspace_id=$(terraform output -raw workspace_id)" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Wait for Application
+        run: |
+          echo "Waiting for application to be ready..."
+          sleep 120
+          
+          APP_URL="${{ steps.outputs.outputs.app_url }}"
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            if curl -f -s "$APP_URL" > /dev/null 2>&1; then
+              echo "✅ Application is responding!"
+              exit 0
+            fi
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting..."
+            sleep 10
+          done
+          
+          echo "⚠️ Application not responding after $MAX_ATTEMPTS attempts"
+          exit 1
+        continue-on-error: true
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 PowerVS Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎉 Success!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Your IBM Cloud Info application is now running on PowerVS!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application URL**: [${{ steps.outputs.outputs.app_url }}](${{ steps.outputs.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public IP**: \`${{ steps.outputs.outputs.public_ip }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Private IP**: \`${{ steps.outputs.outputs.private_ip }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workspace ID**: \`${{ steps.outputs.outputs.workspace_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Zone**: \`${{ github.event.inputs.powervs_zone || 'dal12' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 SSH Access" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Download SSH key from artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "ssh -i powervs_key root@${{ steps.outputs.outputs.public_ip }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 💰 Cost Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Estimated Monthly Cost**: ~\$43-60" >> $GITHUB_STEP_SUMMARY
+          echo "- **Configuration**: 0.25 cores, 2GB RAM, 20GB storage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Deployed by: @${{ github.actor }} at $(date -u)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Save SSH Key Info
+        run: |
+          echo "## 🔑 SSH Key Information" >> ssh_key_info.txt
+          echo "" >> ssh_key_info.txt
+          echo "Download the SSH key from the workflow artifacts." >> ssh_key_info.txt
+          echo "" >> ssh_key_info.txt
+          echo "To connect:" >> ssh_key_info.txt
+          echo "ssh -i powervs_key root@${{ steps.outputs.outputs.public_ip }}" >> ssh_key_info.txt
+
+      - name: Upload SSH Key Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssh-connection-info
+          path: ${{ env.TF_WORKING_DIR }}/ssh_key_info.txt
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f terraform.tfvars
+          rm -f tfplan
+
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+    environment:
+      name: powervs-production-destroy
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Generate SSH Key (for state consistency)
+        run: |
+          ssh-keygen -t rsa -b 4096 -f ~/.ssh/powervs_key -N ""
+
+      - name: Create terraform.tfvars
+        run: |
+          SSH_PUBLIC_KEY=$(cat ~/.ssh/powervs_key.pub)
+          cat > terraform.tfvars << EOF
+          ibmcloud_api_key    = "${{ secrets.IBM_CLOUD_API_KEY }}"
+          region              = "${{ secrets.IBM_CLOUD_REGION }}"
+          powervs_zone        = "${{ github.event.inputs.powervs_zone || 'dal12' }}"
+          resource_group_name = "${{ secrets.IBM_CLOUD_RESOURCE_GROUP }}"
+          workspace_name = "ibm-cloud-info-ws"
+          network_name = "ibm-cloud-info-net"
+          network_cidr = "192.168.0.0/24"
+          network_dns  = ["9.9.9.9", "1.1.1.1"]
+          instance_name         = "ibm-cloud-info-lpar"
+          instance_image_name   = "Rocky-Linux-9"
+          instance_processors   = 0.25
+          instance_memory       = 2
+          instance_proc_type    = "shared"
+          instance_sys_type     = "s922"
+          instance_storage_tier = "tier3"
+          instance_storage_size = 20
+          ssh_key_name   = "ibm-cloud-info-key"
+          ssh_public_key = "${SSH_PUBLIC_KEY}"
+          app_port = 80
+          tags = ["terraform", "powervs", "ibm-cloud-info", "github-actions"]
+          EOF
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve -input=false
+
+      - name: Destroy Summary
+        run: |
+          echo "## 🗑️ PowerVS Resources Destroyed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All PowerVS resources have been successfully destroyed:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ LPAR instance deleted" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Networks removed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SSH keys deleted" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Workspace cleaned up" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💰 **Billing stopped** - No more charges will be incurred" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Destroyed by: @${{ github.actor }} at $(date -u)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup
+        if: always()
+        run: rm -f terraform.tfvars
+
+# Made with Bob

@@ -1,17 +1,6 @@
 name: Build, Push and Deploy to IBM Cloud
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'Dockerfile'
-      - 'nginx.conf'
-      - 'terraform/**'
-      - '.github/workflows/terraform-deploy.yml'
-  repository_dispatch:
-    types: [docker-image-updated]
   workflow_dispatch:
     inputs:
       action:
